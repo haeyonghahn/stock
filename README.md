@@ -59,3 +59,15 @@ Thread1이 key가 1인 데이터가 없기 때문에 정상적으로 set하게 �
 
 ### Lettuce를 작성하여 재고감소 로직 작성하기
 Redis의 Lettuce는 Named Lock과 비스하지만 다른 점으로는 Redis를 이용한다는 점과 Session 관리에 신경을 안 써도 된다는 점이다. Lettuce를 활용한 방법은 구현이 간단하다는 장점이 있다. 단점으로는 SpinLock 방식이므로 redis에 부하를 줄 수 있다.
+
+### Redisson 을 활용하여 재고로직 작성하기
+__의존성 추가__   
+```gradle
+implementation 'org.redisson:redisson-spring-boot-starter:3.24.3'
+```
+__redis pub/sub__    
+첫 번째 터미널에서는 subscribe이라는 명령어를 통해 ch1이라는 채널을 구독한다. 그리고 다른 터미널에서 publish라는 명령어를 통해 ch1채널에 hello라는 메세지를 보내준다. 그러면 ch1 채널을 구독하고 있는 곳에서 hello라는 메세지를 받는 것을 확인할 수 있다. redis는 자신이 점유하고 있는 lock을 해제할 때 채널에 메시지를 보내줌으로써 lock을 획득해야 하는 Thread들에게 lock 획득을 하라고 전달해준다. 그러면 lock 획득을 해야하는 Thread들은 메시지를 받았을 때 lock 획득을 시도하게 된다. lettuce는 계속 lock 획득을 시도하는 반면에 Redisson는 lock 해제가 되었을 때 한 번 혹은 몇 번만 시도를 하기 때문에 redis의 부하를 줄여주게 된다.
+
+![image](https://github.com/haeyonghahn/stock/assets/31242766/ad336a1a-161e-464b-bbce-dcbbfa7b607f)
+
+Redisson을 활용한 방법은 PubSub 기반의 구현이기 때문에 Redis의 부하를 줄여준다는 장점이 있다. 하지만 구현이 조금 복잡하다는 단점과 별도의 라이브러리를 사용해야 하는 부담감이 있다. 실무에서는 재시도가 필요하지 않은 lock은 lettuce를 활용하고 재시도가 필요한 경우에는 redisson을 활용하고 있다.
