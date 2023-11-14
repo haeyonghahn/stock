@@ -25,3 +25,7 @@ Java의 Synchronized는 하나의 프로세스 안에서만 보장된다. 서버
 - Named Lock
   - 이름을 가진 metadata locking 이다. 이름을 가진 lock 을 획득한 후 해제할때까지 다른 세션은 이 lock 을 획득할 수 없도록 한다. 주의할 점으로는 transaction 이 종료될 때 lock 이 자동으로 해제되지 않는다. 별도의 명령어로 해제를 수행해주거나 선점시간이 끝나야 해제된다.
 
+### Pessimistic Lock 활용해보기
+![image](https://github.com/haeyonghahn/stock/assets/31242766/4a06b688-d19c-4ee6-b2c1-55bb9a5349b5)
+
+Thread1이 락을 걸고 데이터를 가져간다. 그리고 그 후에 Thread2가 락을 걸고 데이터 획득을 시도한다. Thread1이 이미 점유 중이므로 잠시 대기하게 된다. Thread1의 작업이 모두 완료가 되면 Thread2가 락을 걸고 데이터를 가져갈 수 있게 된다. Pessimistic Lock 장점은 충돌이 빈번하게 일어난다면 Optimistic Lock보다 성능이 좋을 수 있다. 두 번째로는 락을 통해 업데이트를 제어하기 때문에 데이터 정합성이 보장된다. 단점으로는 별도의 락을 잡기 때문에 성능 감소가 있을 수 있다.
