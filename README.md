@@ -29,3 +29,8 @@ Java의 Synchronized는 하나의 프로세스 안에서만 보장된다. 서버
 ![image](https://github.com/haeyonghahn/stock/assets/31242766/4a06b688-d19c-4ee6-b2c1-55bb9a5349b5)
 
 Thread1이 락을 걸고 데이터를 가져간다. 그리고 그 후에 Thread2가 락을 걸고 데이터 획득을 시도한다. Thread1이 이미 점유 중이므로 잠시 대기하게 된다. Thread1의 작업이 모두 완료가 되면 Thread2가 락을 걸고 데이터를 가져갈 수 있게 된다. Pessimistic Lock 장점은 충돌이 빈번하게 일어난다면 Optimistic Lock보다 성능이 좋을 수 있다. 두 번째로는 락을 통해 업데이트를 제어하기 때문에 데이터 정합성이 보장된다. 단점으로는 별도의 락을 잡기 때문에 성능 감소가 있을 수 있다.
+
+### Optimistic Lock 활용해보기
+![image](https://github.com/haeyonghahn/stock/assets/31242766/4415e41f-dae0-4e16-bdeb-54945d105f19)
+
+서버 1과 서버 2가 버전이 1인 데이터를 가져간다. 그리고 서버 1이 업데이트할 때 버전을 1개 올려준다. 그 후에 서버가 버전이 1인 조건을 가지고 업데이트를 시도한다. 하지만 현재 데이터의 버전은 2이기 때문에 업데이트는 실패하게 된다. 이것처럼 내가 읽은 버전에서 수정사항이 생겼을 경우 애플리케이션에서 다시 읽은 후에 작업을 수행해야 한다. 해당 목차에서는 소스상에 먼저, Optimistic Lock을 사용하기 위해서 버전 컬럼을 추가해 주어야 한다. 그리고 version 어노테이션을 붙인다. Optimistic Lock은 실패했을 때 재시도를 해야함으로 Facade라는 클래스를 생성하도록 한다.
