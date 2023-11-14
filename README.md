@@ -43,3 +43,16 @@ Named Lock은 이름을 가진 메타데이터 락이다. 이름을 가진 락�
 Named Lock을 사용할 때에는 실제로 데이터소스를 분리해서 사용해야 한다. 같은 데이터소스를 사용하면 커넥션 풀이 부족해지는 현상으로 인해 다른 서비스에 영향을 미칠 수 있다. 예제에서 편의성을 위해 Stock 엔티티에 Named Lock을 사용하지만 실무에서는 별도의 JDBC를 사용해야 한다. Stock 서비스에서는 부모의 트랜잭션과 별도로 실행이 되어야 되기 때문에 트랜잭션 전파 옵션을 변경해준다. 
 
 Named Lock은 주로 분산락을 구현할 때 사용한다. Pessimistic Lock은 타임아웃을 구현하기 힘들지만 Named Lock은 타임아웃을 손쉽게 구현할 수 있다. 그 외에도 데이터 삽입 시 정합성을 맞춰야 하는 경우에도 Named Lock을 사용할 수 있다. 하지만 이 방법은 트랜잭션 종료 시에 락 해제, 세션 관리를 잘 해줘야 하기 때문에 주의해서 사용해야 하고 실제로 사용할 때는 구현 방법이 복잡할 수 있다.
+
+## Redis 이용해보기
+분산락을 구현할 때 사용하는 대표적인 라이브러리는 Lettuce와 Redisson이 있다. 첫 번째로 Lettuce는 setNx 명령어를 활용하여 분산락을 구현할 수 있다. setNx 명령어는 `set if not exist`의 줄임말로 key와 value를 set할 때 값이 없을 때만 set하는 명령어이다. setNx를 활용하는 방식은 SpinLock 방식이므로 retry로직을 개발자가 직접 작성해주어야 한다. `SpinLock`이란 락을 획득하려는 Thread가 락을 사용할 수 있는지 반복적으로 확인하면서 락 획득을 시도하는 방식이다. 
+
+![image](https://github.com/haeyonghahn/stock/assets/31242766/f37a5368-92f3-4ca8-b67c-52da59f43218)
+
+Thread1이 key가 1인 데이터가 없기 때문에 정상적으로 set하게 되고 Thread1의 성공을 리턴하게 된다. 그 후에 Thread2가 똑같이 key가 1인 데이터를 set하려고 할 때 레디스에는 이미 키가 1인 데이터가 있으므로 실패를 리턴하게 된다. Thread2는 lock 획득에 실패했기 때문에 일정 시간 이후에 lock 획득을 재시도한다. 락 획득할 때까지 재시도하는 로직을 작성해주어야 한다. 
+
+두 번째로, Redisson같은 경우 pub/sub 기반의 lock 구현이 되어 있다. pub/sub 기반은 채널을 하나 만들고 lock을 점유 중인 Thread가 lock 획득하려고 대기중인 Thread에게 해제를 알려주면 안내를 받은 Thread가 lock 획득을 시도하는 방식이다. 해당 방식은 Lettuce와 다르게 별도의 retry로직을 작성하지 않아도 된다. 
+
+![image](https://github.com/haeyonghahn/stock/assets/31242766/4335b45e-14a3-4e35-b28e-dee229dcc5ed)
+
+채널이 하나 존재하고 Thread1이 먼저 lock을 점유하고 Thread2가 이후에 시도를 하려고 한다면 Thread1이 lock을 해제할 때 '나 끝났어'라는 메세지를 채널로 보내게 된다. 그러면 채널은 Thread2의 lock 획득을 시도해라는 것을 알려주고 Thread2는 lock 획득을 시도하게 된다.
