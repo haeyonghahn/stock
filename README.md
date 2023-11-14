@@ -56,3 +56,6 @@ Thread1이 key가 1인 데이터가 없기 때문에 정상적으로 set하게 �
 ![image](https://github.com/haeyonghahn/stock/assets/31242766/4335b45e-14a3-4e35-b28e-dee229dcc5ed)
 
 채널이 하나 존재하고 Thread1이 먼저 lock을 점유하고 Thread2가 이후에 시도를 하려고 한다면 Thread1이 lock을 해제할 때 '나 끝났어'라는 메세지를 채널로 보내게 된다. 그러면 채널은 Thread2의 lock 획득을 시도해라는 것을 알려주고 Thread2는 lock 획득을 시도하게 된다.
+
+### Lettuce를 작성하여 재고감소 로직 작성하기
+Redis의 Lettuce는 Named Lock과 비스하지만 다른 점으로는 Redis를 이용한다는 점과 Session 관리에 신경을 안 써도 된다는 점이다. Lettuce를 활용한 방법은 구현이 간단하다는 장점이 있다. 단점으로는 SpinLock 방식이므로 redis에 부하를 줄 수 있다.
